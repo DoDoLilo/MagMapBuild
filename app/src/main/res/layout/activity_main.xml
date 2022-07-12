@@ -7,12 +7,113 @@
     tools:context=".MainActivity">
 
     <TextView
+        android:id="@+id/tvPersonID"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hello World!"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginStart="50dp"
+        android:layout_marginTop="160dp"
+        android:text="人员序号"
+        android:textColor="@color/black"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvSamplingNum"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="采集序号"
+        android:textColor="@color/black"
+        app:layout_constraintEnd_toEndOf="@+id/tvPersonID"
+        app:layout_constraintTop_toBottomOf="@+id/tvPersonID" />
+
+    <EditText
+        android:id="@+id/editTextPersonID"
+        android:layout_width="90dp"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:ems="10"
+        android:inputType="number"
+        android:textColor="@color/material_dynamic_neutral60"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@+id/tvPersonID"
+        app:layout_constraintStart_toEndOf="@+id/tvPersonID"
+        app:layout_constraintTop_toTopOf="@+id/tvPersonID"
+        app:layout_constraintVertical_bias="0.619"
+        tools:text="输入人员序号" />
+
+    <EditText
+        android:id="@+id/editTextSampNum"
+        android:layout_width="90dp"
+        android:layout_height="48dp"
+        android:ems="10"
+        android:inputType="number"
+        android:textColor="@color/material_dynamic_neutral60"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@+id/tvSamplingNum"
+        app:layout_constraintStart_toStartOf="@+id/editTextPersonID"
+        app:layout_constraintTop_toTopOf="@+id/tvSamplingNum"
+        app:layout_constraintVertical_bias="0.666"
+        tools:text="输入采集序号" />
+
+    <Button
+        android:id="@+id/buttonMinusPersonID"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:text="-1"
+        app:layout_constraintBottom_toBottomOf="@+id/editTextPersonID"
+        app:layout_constraintStart_toEndOf="@+id/editTextPersonID"
+        app:layout_constraintTop_toTopOf="@+id/editTextPersonID" />
+
+    <Button
+        android:id="@+id/buttonAddPersonID"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="+1"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonMinusPersonID"
+        app:layout_constraintStart_toEndOf="@+id/buttonMinusPersonID"
+        app:layout_constraintTop_toTopOf="@+id/buttonMinusPersonID"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <Button
+        android:id="@+id/buttonMinusSampNum"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:text="-1"
+        app:layout_constraintBottom_toBottomOf="@+id/editTextSampNum"
+        app:layout_constraintStart_toStartOf="@+id/buttonMinusPersonID"
+        app:layout_constraintTop_toTopOf="@+id/editTextSampNum" />
+
+    <Button
+        android:id="@+id/buttonAddSampNum"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:text="+1"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonMinusSampNum"
+        app:layout_constraintStart_toStartOf="@+id/buttonAddPersonID"
+        app:layout_constraintTop_toTopOf="@+id/buttonMinusSampNum" />
+
+    <Switch
+        android:id="@+id/switchResetSensors"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:minHeight="48dp"
+        android:text="采集前重置传感器"
+        app:layout_constraintStart_toStartOf="@+id/tvSamplingNum"
+        app:layout_constraintTop_toBottomOf="@+id/editTextSampNum" />
+
+    <Button
+        android:id="@+id/buttonStartSampling"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:text="开始采集"
+        app:layout_constraintBottom_toBottomOf="@+id/switchResetSensors"
+        app:layout_constraintStart_toEndOf="@+id/switchResetSensors"
+        app:layout_constraintTop_toTopOf="@+id/switchResetSensors" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

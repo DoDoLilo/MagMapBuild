@@ -7,7 +7,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.util.Log;
 
-import java.util.Arrays;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * 一个实现传感器检查、注册、采集、注销、保存文件功能的类.
@@ -154,7 +155,6 @@ public class SensorsBee {
      */
     public SensorsBee(Context context) {
         this.context = context;
-
     }
 
     /**
@@ -181,13 +181,14 @@ public class SensorsBee {
         return true;
     }
 
+    
     /**
      * 供外部启动传感器进行数据采集.
      * 调用此方法会启动数据采集线程，并且将循环状态置为Reading.
      *
      * @return false 如果任何一个传感器启动失败.
      */
-    public boolean startSensorRecord() {
+    public boolean startSensorRecord(String fileSavePath) {
         loopState = BeeStates.SENSOR_READING;
 
         new Thread(() -> {
@@ -205,8 +206,10 @@ public class SensorsBee {
                     e.printStackTrace();
                 }
             }
-            //TODO: 结束采集，将传感器缓存数据存储到手机内存空间中，为避免阻塞，直接利用这个Thread
-
+            //结束采集，将传感器缓存数据存储到手机内存空间中，为避免阻塞，直接利用这个Thread
+            // TODO: 2022/7/12 把这个拿出去
+            String csvFileName = "TEST_".concat(new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()));
+            CsvDataTools.saveCsvToExternalStorage(fileSavePath, allSensorsValuesBuffer, context);
         }).start();
 
         return true;

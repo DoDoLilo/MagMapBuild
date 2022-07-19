@@ -5,10 +5,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Looper;
 import android.util.Log;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 /**
  * 一个实现传感器检查、注册、采集、注销、保存文件功能的类.
@@ -155,18 +153,18 @@ public class SensorsBee {
      */
     public SensorsBee(Context context) {
         this.context = context;
+        sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
     }
 
     /**
-     * 初始化对应Sensor对象，检查所需的所有传感器的可用性.
+     * 检查所需的所有传感器的可用性.
+     * @return false 如果任何一个传感器不可用.
      */
-    private boolean checkAndInitSensors() {
-        sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
+    private boolean initSensorsAndCheckAvailable() {
         accSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         quatSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GAME_ROTATION_VECTOR);
-
         //检查该手机的传感器是否可用，如存在不可用的，则初始化失败，弹出提示
         StringBuilder lackedSensorsMsg = new StringBuilder();
         lackedSensorsMsg.append(accSensor == null ? "No Accelerometer!\n" : "");
@@ -174,7 +172,7 @@ public class SensorsBee {
         lackedSensorsMsg.append(magSensor == null ? "No Magnetic Field!\n" : "");
         lackedSensorsMsg.append(quatSensor == null ? "No Game Rotation Vector!\n" : "");
         if (lackedSensorsMsg.length() != 0) {
-            MessageBuilder.showMessage(context, "Init Failed", lackedSensorsMsg.toString());
+            MessageBuilder.showMessageWithOK(context, "Init Failed", lackedSensorsMsg.toString());
             return false;
         }
 
@@ -186,16 +184,21 @@ public class SensorsBee {
      * 供外部启动传感器进行数据采集.
      * 调用此方法会启动数据采集线程，并且将循环状态置为Reading.
      *
-     * @return false 如果任何一个传感器启动失败.
+     * @return false 如果任何一个传感器启动or注册失败.
      */
-    public boolean startSensorRecord(String fileSavePath) {
-        loopState = BeeStates.SENSOR_READING;
+    public boolean startSensorRecord(String fileSaveName) {
+        //1.重新获取传感器对象引用检查传感器是否可用，注册传感器
+        if (!initSensorsAndCheckAvailable() || !registerSensors()) {
+            return false;
+        }
 
+        //2.启动采数线程
+        loopState = BeeStates.SENSOR_READING;
         new Thread(() -> {
             //实际runnable执行代码块，每隔5ms从sensorValues获取数据存到buffer中
             while (loopState == BeeStates.SENSOR_READING) {
                 //NOTE：这里的写buffer并非原子写，尽可能写入最新的传感器数据与时间戳
-                allSensorsValuesBuffer.append(CsvDataTools.convertValuesToSavingFormat(
+                allSensorsValuesBuffer.append(CsvDataTools.convertSensorValuesToCsvFormat(
                         accValues, gyroValues, magValues, quatValues
                 ));
 
@@ -206,10 +209,10 @@ public class SensorsBee {
                     e.printStackTrace();
                 }
             }
-            //结束采集，将传感器缓存数据存储到手机内存空间中，为避免阻塞，直接利用这个Thread
-            // TODO: 2022/7/12 把这个拿出去
-            String csvFileName = "TEST_".concat(new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss").format(new Date()));
-            CsvDataTools.saveCsvToExternalStorage(fileSavePath, allSensorsValuesBuffer, context);
+            //3.结束采集，将传感器缓存数据存储到手机内存空间中，为避免阻塞，直接利用这个Thread
+            Looper.prepare();
+            CsvDataTools.saveCsvToExternalStorage(fileSaveName, allSensorsValuesBuffer.toString(), context);
+            Looper.loop();
         }).start();
 
         return true;
@@ -235,6 +238,13 @@ public class SensorsBee {
     }
 
     /**
+     * @return true 如果该对象正在数据采集
+     */
+    public boolean isRecording() {
+        return loopState == BeeStates.SENSOR_READING;
+    }
+
+    /**
      * 注册所有传感器.
      *
      * @return false 如果任何一个传感器注册失败.
@@ -254,7 +264,7 @@ public class SensorsBee {
             registerFailedMsg.append("GameRotationVector Register Failed!\n");
         }
         if (registerFailedMsg.length() != 0) {
-            MessageBuilder.showMessage(context, "Init Failed", registerFailedMsg.toString());
+            MessageBuilder.showMessageWithOK(context, "Init Failed", registerFailedMsg.toString());
             return false;
         }
 
@@ -270,4 +280,6 @@ public class SensorsBee {
         sensorManager.unregisterListener(magSensorListener, magSensor);
         sensorManager.unregisterListener(quatSensorListener, quatSensor);
     }
+
+
 }

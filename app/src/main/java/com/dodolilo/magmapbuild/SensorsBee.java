@@ -59,14 +59,18 @@ public class SensorsBee {
      */
     private final int SAMPLING_PERIOD_US = 1000000 / SAMPLEING_FREQUENCY;
 
-    private SensorManager sensorManager;
+    /**
+     * 为什么这个成员对象可以声明为final？因为它在构造函数中初始化了.
+     * "final修饰成员变量，该成员变量必须在创建对象之前（构造函数执行结束之前）进行赋值，否则编译失败".
+     */
+    private final SensorManager sensorManager;
 
     /**
      * 加速度计 TYPE_ACCELEROMETER
      */
     private Sensor accSensor;
     private final float[] accValues = new float[3];
-    private SensorEventListener accSensorListener = new SensorEventListener() {
+    private final SensorEventListener accSensorListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
             accValues[0] = event.values[0];
@@ -86,7 +90,7 @@ public class SensorsBee {
      */
     private Sensor gyroSensor;
     private final float[] gyroValues = new float[3];
-    private SensorEventListener gyroSensorListener = new SensorEventListener() {
+    private final SensorEventListener gyroSensorListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
             gyroValues[0] = event.values[0];
@@ -106,7 +110,7 @@ public class SensorsBee {
      */
     private Sensor magSensor;
     private final float[] magValues = new float[3];
-    private SensorEventListener magSensorListener = new SensorEventListener() {
+    private final SensorEventListener magSensorListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
             magValues[0] = event.values[0];
@@ -125,7 +129,7 @@ public class SensorsBee {
      */
     private Sensor quatSensor;
     private final float[] quatValues = new float[4];
-    private SensorEventListener quatSensorListener = new SensorEventListener() {
+    private final SensorEventListener quatSensorListener = new SensorEventListener() {
         @Override
         public void onSensorChanged(SensorEvent event) {
             quatValues[0] = event.values[0];
@@ -144,7 +148,7 @@ public class SensorsBee {
      * 供采数线程写入所有的传感器数据，以“,”间隔.
      * 不涉及多个线程同时写，所以不需要使用StringBuffer.
      */
-    private StringBuilder allSensorsValuesBuffer = new StringBuilder();
+    private final StringBuilder allSensorsValuesBuffer = new StringBuilder();
 
     /**
      * 构造器，依赖注入context.
@@ -250,6 +254,7 @@ public class SensorsBee {
      * @return false 如果任何一个传感器注册失败.
      */
     private boolean registerSensors() {
+        // TODO: 2022/7/20 增加读取传感器型号. 
         StringBuilder registerFailedMsg = new StringBuilder();
         if (!sensorManager.registerListener(accSensorListener, accSensor, SAMPLING_PERIOD_US)) {
             registerFailedMsg.append("Acceleromenter Register Failed!\n");

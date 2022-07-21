@@ -118,7 +118,8 @@
         android:layout_marginTop="50dp"
         android:minHeight="48dp"
         app:layout_constraintEnd_toEndOf="@+id/buttonStartSampling"
-        app:layout_constraintTop_toBottomOf="@+id/buttonStartSampling" />
+        app:layout_constraintTop_toBottomOf="@+id/buttonStartSampling"
+        tools:ignore="SpeakableTextPresentCheck" />
 
     <Button
         android:id="@+id/buttonMarkPoint"
@@ -142,6 +143,28 @@
         app:layout_constraintBottom_toBottomOf="@+id/spinnerSelectPoint"
         app:layout_constraintEnd_toStartOf="@+id/spinnerSelectPoint"
         app:layout_constraintTop_toTopOf="@+id/spinnerSelectPoint" />
+
+    <Button
+        android:id="@+id/buttonUndoMark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="40dp"
+        android:text="撤销(待实现,只允许撤销一次"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/buttonMarkPoint"
+        app:layout_constraintEnd_toStartOf="@+id/buttonMarkPoint"
+        app:layout_constraintTop_toTopOf="@+id/buttonMarkPoint" />
+
+    <TextView
+        android:id="@+id/tvGuide"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="40dp"
+        android:text="@string/tv_user_guide"
+        android:textSize="18sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/buttonMarkPoint" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

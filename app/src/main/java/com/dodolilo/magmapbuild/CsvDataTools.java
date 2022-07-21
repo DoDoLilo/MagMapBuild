@@ -147,7 +147,7 @@ public class CsvDataTools {
         }
 
         //文件不存在或为空文件
-        MessageBuilder.showMessageWithOK(context, "Read Error", externalFilesFile.getAbsolutePath().concat("不存在or为空文件，请手动拷贝"));
+        MessageBuilder.showMessageWithOK(context, "Read Error", externalFilesFile.getAbsolutePath().concat("不存在or为空文件"));
         return null;
     }
 

@@ -10,6 +10,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -106,12 +107,11 @@ public class MainActivity extends AppCompatActivity {
         //4.TODO :从应用内部存储空间中获取lastPersonId和lastSampNum
 
 
-
     }
 
     /**
      * 系统会在销毁 Activity 之前调用此回调。
-     *
+     * <p>
      * 此回调是 Activity 接收的最后一个回调。
      * 通常，实现 onDestroy() 是为了确保
      * 在销毁 Activity 或包含该 Activity 的进程时释放该 Activity 的所有资源。
@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
                 pointMarkStrBd = new StringBuilder();
                 boolean startSucceed = sensorsBee.startSensorRecord(sensorDataFileName);
                 if (!startSucceed) {
-                    MessageBuilder.showMessageWithOK(this,"Start Error", "Start Failed");
+                    MessageBuilder.showMessageWithOK(this, "Start Error", "Start Failed");
                     return;
                 }
                 buttonStartSampling.setText(R.string.button_stop_record);
@@ -151,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
 
         //动态创建下拉列表，并注册监听器
         ArrayList<String> pointNameList = new ArrayList<>();
-        for (Map.Entry<String, float[]> entry: pointsMap.entrySet()) {
+        for (Map.Entry<String, float[]> entry : pointsMap.entrySet()) {
             pointNameList.add(entry.getKey());
         }
         ArrayAdapter<String> stringArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, pointNameList);
@@ -177,6 +177,11 @@ public class MainActivity extends AppCompatActivity {
                 if (sensorsBee.isRecording()) {
                     float[] pointXY = pointsMap.get(selectedPointName);
                     pointMarkStrBd.append(CsvDataTools.convertPointToCsvFormat(pointXY));
+                    Toast.makeText(
+                            this,
+                            "打点 " + selectedPointName + "：" + pointXY[0] + ", " + pointXY[1],
+                            Toast.LENGTH_SHORT
+                    ).show();
                 } else {
                     MessageBuilder.showMessageWithOK(this, "提示", "未开始采集，无法打点");
                 }

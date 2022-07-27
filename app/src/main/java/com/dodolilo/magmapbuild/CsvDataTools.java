@@ -15,6 +15,19 @@ import java.util.Map;
 
 
 public class CsvDataTools {
+    public enum FileSaveType {
+        CSV(".csv"), TXT(".txt");
+
+        private final String fileType;
+
+        FileSaveType(String fileType) {
+            this.fileType = fileType;
+        }
+
+        public String getFileType() {
+            return fileType;
+        }
+    }
 
     /**
      * 将多个传感器数据数组转为可供csv文件存储的字符串格式.
@@ -76,15 +89,16 @@ public class CsvDataTools {
     /**
      * 向Android<b>应用外部存储空间的cache文件夹</b>中保存<b>csv文件</b>.
      * 涉及UI Handler，若不是在主线程中使用，需要主动创建Looper.
-     * @param csvFileName 文件名，应该以".csv"结尾，不需要外部给外存路径
-     * @param csvDataStr  写入csv文件的数据
+     * @param fileName 文件名，应该以".csv"结尾，不需要外部给外存路径
+     * @param fileType 文件类型后缀，如".csv"
+     * @param dataStr  写入csv文件的数据
      * @param context     上下文
      * @return true 如果保存文件成功
      */
-    public static boolean saveCsvToExternalStorage(String csvFileName, String csvDataStr, Context context) {
+    public static boolean saveCsvToExternalStorage(String fileName, FileSaveType fileType, String dataStr, Context context) {
         //检查文件名是否以“.csv"结尾
-        if (!csvFileName.endsWith(".csv")) {
-            csvFileName = csvFileName.concat(".csv");
+        if (!fileName.endsWith(fileType.getFileType())) {
+            fileName = fileName.concat(fileType.getFileType());
         }
 
         //检查外存是否可写
@@ -94,9 +108,9 @@ public class CsvDataTools {
         }
 
         //写文件，选择外部存储cache文件夹
-        File externalCacheFile = new File(context.getExternalCacheDir(), csvFileName);
+        File externalCacheFile = new File(context.getExternalCacheDir(), fileName);
         try (FileOutputStream fos = new FileOutputStream(externalCacheFile)) {
-            fos.write(csvDataStr.getBytes());
+            fos.write(dataStr.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
             MessageBuilder.showMessageWithOK(context, "Write Error", e.getMessage());

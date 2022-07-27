@@ -162,6 +162,7 @@ public class SensorsBee {
 
     /**
      * 检查所需的所有传感器的可用性.
+     *
      * @return false 如果任何一个传感器不可用.
      */
     private boolean initSensorsAndCheckAvailable() {
@@ -183,7 +184,7 @@ public class SensorsBee {
         return true;
     }
 
-    
+
     /**
      * 供外部启动传感器进行数据采集.
      * 调用此方法会启动数据采集线程，并且将循环状态置为Reading.
@@ -215,7 +216,7 @@ public class SensorsBee {
             }
             //3.结束采集，将传感器缓存数据存储到手机内存空间中，为避免阻塞，直接利用这个Thread
             Looper.prepare();
-            CsvDataTools.saveCsvToExternalStorage(fileSaveName, allSensorsValuesBuffer.toString(), context);
+            CsvDataTools.saveCsvToExternalStorage(fileSaveName, CsvDataTools.FileSaveType.CSV, allSensorsValuesBuffer.toString(), context);
             Looper.loop();
         }).start();
 

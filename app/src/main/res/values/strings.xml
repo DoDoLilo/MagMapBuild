@@ -4,5 +4,6 @@
     <string name="button_start_record">开始采集</string>
     <string name="button_stop_record">停止采集</string>
     <string name="tv_user_guide">采数规范：\n 1.人员位于采集起始点（自定义）\n 2.下拉列表选择起始点位\n
-        3.点击“开始采集”、点击“打点”\n 4.开始遍历走动采集（只走相邻点） </string>
+        3.点击“开始采集”、点击“打点”\n 4.开始遍历走动采集，要求:</string>
+    <string name="tv_move_note">尽量走相邻点\n不允许连续打同一点</string>
 </resources>

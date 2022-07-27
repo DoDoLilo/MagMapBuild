@@ -131,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
                 //停止采数，保存打点文件，将按钮文本改为”开始采数“，将按钮颜色改为绿色
                 sensorsBee.stopSensorRecord();
                 String pointMarkFileName = fileMark.concat("_points");
-                CsvDataTools.saveCsvToExternalStorage(pointMarkFileName, pointMarkStrBd.toString(), this);
+                CsvDataTools.saveCsvToExternalStorage(pointMarkFileName, CsvDataTools.FileSaveType.CSV, pointMarkStrBd.toString(), this);
                 buttonStartSampling.setText(R.string.button_start_record);
                 buttonStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.start_green));
             } else {

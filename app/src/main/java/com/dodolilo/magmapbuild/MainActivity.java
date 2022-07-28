@@ -154,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
         for (Map.Entry<String, float[]> entry : pointsMap.entrySet()) {
             pointNameList.add(entry.getKey());
         }
+
         ArrayAdapter<String> stringArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, pointNameList);
         stringArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_item);
         spinnerSelectPoint.setAdapter(stringArrayAdapter);

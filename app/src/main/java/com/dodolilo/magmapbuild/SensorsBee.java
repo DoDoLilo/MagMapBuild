@@ -145,12 +145,6 @@ public class SensorsBee {
     };
 
     /**
-     * 供采数线程写入所有的传感器数据，以“,”间隔.
-     * 不涉及多个线程同时写，所以不需要使用StringBuffer.
-     */
-    private final StringBuilder allSensorsValuesBuffer = new StringBuilder();
-
-    /**
      * 构造器，依赖注入context.
      *
      * @param context 上下文
@@ -198,6 +192,7 @@ public class SensorsBee {
         }
 
         //2.启动采数线程
+        StringBuilder allSensorsValuesBuffer = new StringBuilder();
         loopState = BeeStates.SENSOR_READING;
         new Thread(() -> {
             //实际runnable执行代码块，每隔5ms从sensorValues获取数据存到buffer中

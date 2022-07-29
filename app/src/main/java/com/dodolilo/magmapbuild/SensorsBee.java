@@ -196,7 +196,17 @@ public class SensorsBee {
         loopState = BeeStates.SENSOR_READING;
         new Thread(() -> {
             //实际runnable执行代码块，每隔5ms从sensorValues获取数据存到buffer中
+            boolean zeroStage = true;
             while (loopState == BeeStates.SENSOR_READING) {
+                if (zeroStage) {
+                    if (sensorsHaveZeroValue()) {
+                        //传感器存在0值，仍处于启动阶段
+                        continue;
+                    } else {
+                        zeroStage = false;
+                    }
+                }
+
                 //NOTE：这里的写buffer并非原子写，尽可能写入最新的传感器数据与时间戳
                 allSensorsValuesBuffer.append(CsvDataTools.convertSensorValuesToCsvFormat(
                         accValues, gyroValues, magValues, quatValues
@@ -250,7 +260,6 @@ public class SensorsBee {
      * @return false 如果任何一个传感器注册失败.
      */
     private boolean registerSensors() {
-        // TODO: 2022/7/20 增加读取传感器型号. 
         StringBuilder registerFailedMsg = new StringBuilder();
         if (!sensorManager.registerListener(accSensorListener, accSensor, SAMPLING_PERIOD_US)) {
             registerFailedMsg.append("Acceleromenter Register Failed!\n");
@@ -282,5 +291,35 @@ public class SensorsBee {
         sensorManager.unregisterListener(quatSensorListener, quatSensor);
     }
 
+    /**
+     * 检查现在的传感器读数是否存在0值.
+     *
+     * @return true 如果任何一个传感器的任何一维的值==0
+     */
+    private boolean sensorsHaveZeroValue() {
+        final float ZERO_VAL = 0;
 
+        for (float data : accValues) {
+            if (data == ZERO_VAL) {
+                return true;
+            }
+        }
+        for (float data : gyroValues) {
+            if (data == ZERO_VAL) {
+                return true;
+            }
+        }
+        for (float data : magValues) {
+            if (data == ZERO_VAL) {
+                return true;
+            }
+        }
+        for (float data : quatValues) {
+            if (data == ZERO_VAL) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

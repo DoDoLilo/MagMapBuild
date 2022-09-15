@@ -4,6 +4,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import android.os.Bundle;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -12,6 +15,9 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -22,20 +28,28 @@ public class MainActivity extends AppCompatActivity {
     /**
      * UI组件声明
      */
-    private EditText editTextPersonId;
-    private EditText editTextSampNum;
-    private Button buttonMinusPersonId;
-    private Button buttonAddPersonId;
-    private Button buttonMinusSampNum;
-    private Button buttonAddSampNum;
-    private Button buttonStartSampling;
-    private Button buttonMarkPoint;
+    private EditText edtPersonId;
+    private EditText edtSampNum;
+    private EditText edtServerIP;
+    private EditText edtServerPort;
+    private Button btMinusPersonId;
+    private Button btAddPersonId;
+    private Button btMinusSampNum;
+    private Button btAddSampNum;
+    private Button btStartSampling;
+    private Button btMarkPoint;
+    private Button btConnectServer;
     private Spinner spinnerSelectPoint;
 
     /**
      * 数据采集类对象
      */
     private SensorsBee sensorsBee;
+
+    /**
+     * 保持传感器数据的共享容器引用.
+     */
+    private StringBuilder sensorsData;
 
     /**
      * 上次采数使用的用户编号与采数序号.
@@ -71,7 +85,34 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 文件标记，帮助统一传感器文件与打点文件的名称.
      */
-    private String fileMark;
+    private String fileNameMark;
+
+    /**
+     * 定位系统服务器ip地址.
+     */
+    private String serverIP = "10.255.18.240";
+
+    /**
+     * 定位系统服务器端口号.
+     */
+    private int serverPort = 9090;
+
+    /**
+     * 本APP作为客户端的socket连接.初始为未连接的socket
+     */
+    private Socket clientSocket = null;
+
+    private SentDataBySocket dataSentor = null;
+
+    /**
+     * 建立socket连接的时间上限，单位（ms）
+     */
+    private static final int CONNECT_TIME_OUT = 3000;
+
+    /**
+     * 数据发送延迟，单位（ms）
+     */
+    private static final int DATA_SENTING_DELAY = 1000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,14 +128,17 @@ public class MainActivity extends AppCompatActivity {
         pointsMap = CsvDataTools.changePointsCsvToMap(pointsStr);
 
         //1.获取UI组件引用
-        editTextPersonId = findViewById(R.id.editTextPersonID);
-        editTextSampNum = findViewById(R.id.editTextSampNum);
-        buttonMinusPersonId = findViewById(R.id.buttonMinusPersonID);
-        buttonAddPersonId = findViewById(R.id.buttonAddPersonID);
-        buttonMinusSampNum = findViewById(R.id.buttonMinusSampNum);
-        buttonAddSampNum = findViewById(R.id.buttonAddSampNum);
-        buttonStartSampling = findViewById(R.id.buttonStartSampling);
-        buttonMarkPoint = findViewById(R.id.buttonMarkPoint);
+        edtPersonId = findViewById(R.id.edtPersonID);
+        edtSampNum = findViewById(R.id.edtSampNum);
+        edtServerIP = findViewById(R.id.edtServerIP);
+        edtServerPort = findViewById(R.id.edtServerPort);
+        btMinusPersonId = findViewById(R.id.btMinusPersonID);
+        btAddPersonId = findViewById(R.id.btAddPersonID);
+        btMinusSampNum = findViewById(R.id.btMinusSampNum);
+        btAddSampNum = findViewById(R.id.btAddSampNum);
+        btStartSampling = findViewById(R.id.btStartSampling);
+        btMarkPoint = findViewById(R.id.btMarkPoint);
+        btConnectServer = findViewById(R.id.btConnectServer);
         spinnerSelectPoint = findViewById(R.id.spinnerSelectPoint);
 
         //2.构造采数类实例，context即这个Activity对象本身
@@ -119,33 +163,113 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
         sensorsBee.stopSensorRecord();
+        if (dataSentor != null) {
+            dataSentor.finishSentData();
+        }
         // TODO: 2022/7/11 在app死掉前，1、将sensorBee中的上次序号保存到文件，
     }
 
     private void setComponentsListeners() {
-        //设置“开始采集”、“停止采集”按钮的监听器
-        buttonStartSampling.setOnClickListener(v -> {
-            if (sensorsBee.isRecording()) {
-                //停止采数，保存打点文件，将按钮文本改为”开始采数“，将按钮颜色改为绿色
-                sensorsBee.stopSensorRecord();
-                String pointMarkFileName = fileMark.concat("_points");
-                CsvDataTools.saveCsvToExternalStorage(pointMarkFileName, CsvDataTools.FileSaveType.CSV, pointMarkStrBd.toString(), this);
-                buttonStartSampling.setText(R.string.button_start_record);
-                buttonStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.start_green));
-            } else {
-                //开始采数，将按钮文本改为”停止采数“，将按钮颜色改为红色
-                fileMark = "TEST_".concat(new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss", Locale.CHINA).format(new Date()));
-                String sensorDataFileName = fileMark.concat("_sensors");
-                pointMarkStrBd = new StringBuilder();
-                boolean startSucceed = sensorsBee.startSensorRecord(sensorDataFileName);
-                if (!startSucceed) {
-                    MessageBuilder.showMessageWithOK(this, "Start Error", "Start Failed");
+        //设置“连接服务器”按钮的监听器，连接成功后锁住按钮，不允许点击，由“停止采集”执行断开连接操作
+        btConnectServer.setOnClickListener(v -> {
+            Toast.makeText(this, "尝试连接服务器，等待3秒...", Toast.LENGTH_LONG).show();
+            btConnectServer.setEnabled(false);
+            new Thread(() -> {
+                try {
+                    clientSocket = new Socket();
+                    clientSocket.connect(new InetSocketAddress(serverIP, serverPort), CONNECT_TIME_OUT);
+                } catch (IOException e) {
+                    //连接失败
+                    runOnUiThread(()->{
+                        btConnectServer.setEnabled(true);
+                        MessageBuilder.showMessageWithOK(this, "连接服务器失败", "请检查WIFI/IP/Port." + e.getMessage());
+                    });
                     return;
                 }
-                buttonStartSampling.setText(R.string.button_stop_record);
-                buttonStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.stop_red));
+                if (clientSocket.isConnected() && !clientSocket.isClosed()) {
+                    //连接成功且正处于连接ing，锁住按钮，不允许点击
+                    runOnUiThread(()->{
+                        btConnectServer.setEnabled(false);
+                        MessageBuilder.showMessageWithOK(this, "服务器连接成功.", "服务器连接成功.");
+                    });
+                }
+            }).start();
+        });
+
+        //设置IP、PORT输入框的监听器
+        edtServerIP.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // TODO: 2022/9/14 检查ip的合法性
+                serverIP = s.toString();
+            }
+        });
+        edtServerPort.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                // TODO: 2022/9/14 检查port的合法性 
+                serverPort = Integer.parseInt(s.toString());
+            }
+        });
+
+
+        //设置“开始采集”、“停止采集”按钮的监听器
+        btStartSampling.setOnClickListener(v -> {
+            if (sensorsBee.isRecording()) {
+                //停止采数，停止发送程序，保存打点文件，将按钮文本改为”开始采数“，将按钮颜色改为绿色
+                sensorsBee.stopSensorRecord();
+                if (dataSentor != null) {
+                    dataSentor.finishSentData();
+                }
+
+                String pointMarkFileName = fileNameMark.concat("_points");
+                CsvDataTools.saveCsvToExternalStorage(pointMarkFileName, CsvDataTools.FileSaveType.CSV, pointMarkStrBd.toString(), this);
+
+                btStartSampling.setText(R.string.button_start_record);
+                btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.start_green));
+                btConnectServer.setEnabled(true);
+            } else {
+                //开始采数，将按钮文本改为”停止采数“，将按钮颜色改为红色
+                fileNameMark = "TEST_".concat(new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss", Locale.CHINA).format(new Date()));
+                pointMarkStrBd = new StringBuilder();
+                sensorsData = new StringBuilder();  //将共享数据容器DI到sensorsBee与dataSentor中
+
+                if (!sensorsBee.startSensorRecord(fileNameMark.concat("_sensors"), sensorsData)) {
+                    MessageBuilder.showMessageWithOK(this, "SensorsBee Start Error", "SensorsBee Start Failed");
+                    return;
+                }
+                //如果是在socket连接成功的情况下，则启动数据发送，否则不管
+                if (clientSocket.isConnected() && !clientSocket.isClosed()) {
+                    dataSentor = SentDataBySocket.sentDataWithFixedDelay(
+                            clientSocket, sensorsData, DATA_SENTING_DELAY, DATA_SENTING_DELAY);
+                    try {
+                        dataSentor.startSentData();
+                    } catch (IOException e) {
+                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                    }
+                } else {
+                    Toast.makeText(this, "未连接服务器", Toast.LENGTH_SHORT);
+                }
+
+                btStartSampling.setText(R.string.button_stop_record);
+                btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.stop_red));
             }
         });
 
@@ -170,11 +294,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
         //设置”打点“按钮的检测器
-        buttonMarkPoint.setOnClickListener(v -> {
+        btMarkPoint.setOnClickListener(v -> {
             if (selectedPointName == null) {
                 MessageBuilder.showMessageWithOK(this, "提示", "未选择点");
             } else {
-                // TODO: 2022/7/19 打点逻辑
+                // 打点逻辑
                 if (sensorsBee.isRecording()) {
                     float[] pointXY = pointsMap.get(selectedPointName);
                     pointMarkStrBd.append(CsvDataTools.convertPointToCsvFormat(pointXY));

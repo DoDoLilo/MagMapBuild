@@ -10,7 +10,7 @@
         android:id="@+id/tvPersonID"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="42dp"
+        android:layout_marginStart="32dp"
         android:layout_marginTop="64dp"
         android:text="人员序号"
         android:textColor="@color/black"
@@ -30,7 +30,7 @@
         app:layout_constraintTop_toBottomOf="@+id/tvPersonID" />
 
     <EditText
-        android:id="@+id/editTextPersonID"
+        android:id="@+id/edtPersonID"
         android:layout_width="90dp"
         android:layout_height="48dp"
         android:layout_marginStart="16dp"
@@ -41,11 +41,11 @@
         app:layout_constraintBottom_toBottomOf="@+id/tvPersonID"
         app:layout_constraintStart_toEndOf="@+id/tvPersonID"
         app:layout_constraintTop_toTopOf="@+id/tvPersonID"
-        app:layout_constraintVertical_bias="0.619"
+        app:layout_constraintVertical_bias="0.583"
         tools:text="输入人员序号" />
 
     <EditText
-        android:id="@+id/editTextSampNum"
+        android:id="@+id/edtSampNum"
         android:layout_width="90dp"
         android:layout_height="48dp"
         android:ems="10"
@@ -53,76 +53,76 @@
         android:textColor="@color/material_dynamic_neutral60"
         android:textSize="12sp"
         app:layout_constraintBottom_toBottomOf="@+id/tvSamplingNum"
-        app:layout_constraintStart_toStartOf="@+id/editTextPersonID"
+        app:layout_constraintStart_toStartOf="@+id/edtPersonID"
         app:layout_constraintTop_toTopOf="@+id/tvSamplingNum"
         app:layout_constraintVertical_bias="0.666"
         tools:text="输入采集序号" />
 
     <Button
-        android:id="@+id/buttonMinusPersonID"
+        android:id="@+id/btMinusPersonID"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="32dp"
         android:text="-1"
-        app:layout_constraintBottom_toBottomOf="@+id/editTextPersonID"
-        app:layout_constraintStart_toEndOf="@+id/editTextPersonID"
-        app:layout_constraintTop_toTopOf="@+id/editTextPersonID" />
+        app:layout_constraintBottom_toBottomOf="@+id/edtPersonID"
+        app:layout_constraintStart_toEndOf="@+id/edtPersonID"
+        app:layout_constraintTop_toTopOf="@+id/edtPersonID" />
 
     <Button
-        android:id="@+id/buttonAddPersonID"
+        android:id="@+id/btAddPersonID"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:text="+1"
-        app:layout_constraintBottom_toBottomOf="@+id/buttonMinusPersonID"
-        app:layout_constraintStart_toEndOf="@+id/buttonMinusPersonID"
-        app:layout_constraintTop_toTopOf="@+id/buttonMinusPersonID"
+        app:layout_constraintBottom_toBottomOf="@+id/btMinusPersonID"
+        app:layout_constraintStart_toEndOf="@+id/btMinusPersonID"
+        app:layout_constraintTop_toTopOf="@+id/btMinusPersonID"
         app:layout_constraintVertical_bias="0.0" />
 
     <Button
-        android:id="@+id/buttonMinusSampNum"
+        android:id="@+id/btMinusSampNum"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:text="-1"
-        app:layout_constraintBottom_toBottomOf="@+id/editTextSampNum"
-        app:layout_constraintStart_toStartOf="@+id/buttonMinusPersonID"
-        app:layout_constraintTop_toTopOf="@+id/editTextSampNum" />
+        app:layout_constraintBottom_toBottomOf="@+id/edtSampNum"
+        app:layout_constraintStart_toStartOf="@+id/btMinusPersonID"
+        app:layout_constraintTop_toTopOf="@+id/edtSampNum" />
 
     <Button
-        android:id="@+id/buttonAddSampNum"
+        android:id="@+id/btAddSampNum"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:text="+1"
-        app:layout_constraintBottom_toBottomOf="@+id/buttonMinusSampNum"
-        app:layout_constraintStart_toStartOf="@+id/buttonAddPersonID"
-        app:layout_constraintTop_toTopOf="@+id/buttonMinusSampNum" />
+        app:layout_constraintBottom_toBottomOf="@+id/btMinusSampNum"
+        app:layout_constraintStart_toStartOf="@+id/btAddPersonID"
+        app:layout_constraintTop_toTopOf="@+id/btMinusSampNum" />
 
     <Button
-        android:id="@+id/buttonStartSampling"
+        android:id="@+id/btStartSampling"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="25dp"
+        android:layout_marginStart="36dp"
+        android:layout_marginTop="64dp"
         android:background="@color/start_green"
         android:text="开始采集"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@+id/buttonMinusSampNum"
-        app:layout_constraintTop_toBottomOf="@+id/buttonMinusSampNum"
+        app:layout_constraintStart_toStartOf="@+id/btMinusSampNum"
+        app:layout_constraintTop_toBottomOf="@+id/btMinusSampNum"
         tools:ignore="TextContrastCheck" />
 
     <Spinner
         android:id="@+id/spinnerSelectPoint"
         android:layout_width="170dp"
         android:layout_height="48dp"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="80dp"
         android:minHeight="48dp"
-        app:layout_constraintEnd_toEndOf="@+id/buttonStartSampling"
-        app:layout_constraintTop_toBottomOf="@+id/buttonStartSampling"
+        app:layout_constraintEnd_toEndOf="@+id/btStartSampling"
+        app:layout_constraintTop_toBottomOf="@+id/btStartSampling"
         tools:ignore="SpeakableTextPresentCheck" />
 
     <Button
-        android:id="@+id/buttonMarkPoint"
+        android:id="@+id/btMarkPoint"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="28dp"
@@ -145,15 +145,15 @@
         app:layout_constraintTop_toTopOf="@+id/spinnerSelectPoint" />
 
     <Button
-        android:id="@+id/buttonUndoMark"
+        android:id="@+id/btUndoMark"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="40dp"
         android:text="撤销(待实现,只允许撤销一次"
         android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="@+id/buttonMarkPoint"
-        app:layout_constraintEnd_toStartOf="@+id/buttonMarkPoint"
-        app:layout_constraintTop_toTopOf="@+id/buttonMarkPoint" />
+        app:layout_constraintBottom_toBottomOf="@+id/btMarkPoint"
+        app:layout_constraintEnd_toStartOf="@+id/btMarkPoint"
+        app:layout_constraintTop_toTopOf="@+id/btMarkPoint" />
 
     <TextView
         android:id="@+id/tvGuide"
@@ -164,7 +164,7 @@
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/buttonMarkPoint" />
+        app:layout_constraintTop_toBottomOf="@+id/btMarkPoint" />
 
     <TextView
         android:id="@+id/tvMoveNote"
@@ -179,6 +179,53 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tvGuide" />
+
+    <TextView
+        android:id="@+id/tvServerAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="服务器IP/Port"
+        android:textColor="@color/black"
+        android:textSize="18dp"
+        app:layout_constraintStart_toStartOf="@+id/tvSamplingNum"
+        app:layout_constraintTop_toBottomOf="@+id/tvSamplingNum" />
+
+    <EditText
+        android:id="@+id/edtServerIP"
+        android:layout_width="150dp"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:minHeight="48dp"
+        android:text="10.255.18.240"
+        app:layout_constraintBottom_toBottomOf="@+id/tvServerAddress"
+        app:layout_constraintStart_toEndOf="@+id/tvServerAddress"
+        app:layout_constraintTop_toTopOf="@+id/tvServerAddress" />
+
+    <EditText
+        android:id="@+id/edtServerPort"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:ems="10"
+        android:inputType="number"
+        android:minHeight="48dp"
+        android:text="9090"
+        app:layout_constraintBottom_toBottomOf="@+id/edtServerIP"
+        app:layout_constraintStart_toEndOf="@+id/edtServerIP"
+        app:layout_constraintTop_toTopOf="@+id/edtServerIP"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <Button
+        android:id="@+id/btConnectServer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:text="连接服务器"
+        app:layout_constraintBottom_toBottomOf="@+id/btStartSampling"
+        app:layout_constraintStart_toStartOf="@+id/tvServerAddress"
+        app:layout_constraintTop_toBottomOf="@+id/edtServerPort" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

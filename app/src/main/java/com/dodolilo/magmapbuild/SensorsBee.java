@@ -8,10 +8,13 @@ import android.hardware.SensorManager;
 import android.os.Looper;
 import android.util.Log;
 
+import net.jcip.annotations.NotThreadSafe;
+
 /**
  * 一个实现传感器检查、注册、采集、注销、保存文件功能的类.
  * 需要使用加速度计、陀螺仪、磁力计、方向四元数这4个传感器.
  */
+@NotThreadSafe
 public class SensorsBee {
     /**
      * 外部提供的上下文.
@@ -185,14 +188,13 @@ public class SensorsBee {
      *
      * @return false 如果任何一个传感器启动or注册失败.
      */
-    public boolean startSensorRecord(String fileSaveName) {
+    public boolean startSensorRecord(String fileSaveName, StringBuilder sensorsData) {
         //1.重新获取传感器对象引用检查传感器是否可用，注册传感器
         if (!initSensorsAndCheckAvailable() || !registerSensors()) {
             return false;
         }
 
         //2.启动采数线程
-        StringBuilder allSensorsValuesBuffer = new StringBuilder();
         loopState = BeeStates.SENSOR_READING;
         new Thread(() -> {
             //实际runnable执行代码块，每隔5ms从sensorValues获取数据存到buffer中
@@ -208,7 +210,7 @@ public class SensorsBee {
                 }
 
                 //NOTE：这里的写buffer并非原子写，尽可能写入最新的传感器数据与时间戳
-                allSensorsValuesBuffer.append(CsvDataTools.convertSensorValuesToCsvFormat(
+                sensorsData.append(CsvDataTools.convertSensorValuesToCsvFormat(
                         accValues, gyroValues, magValues, quatValues
                 ));
 
@@ -221,7 +223,7 @@ public class SensorsBee {
             }
             //3.结束采集，将传感器缓存数据存储到手机内存空间中，为避免阻塞，直接利用这个Thread
             Looper.prepare();
-            CsvDataTools.saveCsvToExternalStorage(fileSaveName, CsvDataTools.FileSaveType.CSV, allSensorsValuesBuffer.toString(), context);
+            CsvDataTools.saveCsvToExternalStorage(fileSaveName, CsvDataTools.FileSaveType.CSV, sensorsData.toString(), context);
             Looper.loop();
         }).start();
 

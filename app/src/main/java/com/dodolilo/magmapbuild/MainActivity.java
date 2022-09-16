@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity {
     private Button btAddSampNum;
     private Button btStartSampling;
     private Button btMarkPoint;
-    private Button btConnectServer;
     private Spinner spinnerSelectPoint;
 
     /**
@@ -138,7 +137,6 @@ public class MainActivity extends AppCompatActivity {
         btAddSampNum = findViewById(R.id.btAddSampNum);
         btStartSampling = findViewById(R.id.btStartSampling);
         btMarkPoint = findViewById(R.id.btMarkPoint);
-        btConnectServer = findViewById(R.id.btConnectServer);
         spinnerSelectPoint = findViewById(R.id.spinnerSelectPoint);
 
         //2.构造采数类实例，context即这个Activity对象本身
@@ -171,32 +169,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setComponentsListeners() {
-        //设置“连接服务器”按钮的监听器，连接成功后锁住按钮，不允许点击，由“停止采集”执行断开连接操作
-        btConnectServer.setOnClickListener(v -> {
-            Toast.makeText(this, "尝试连接服务器，等待3秒...", Toast.LENGTH_LONG).show();
-            btConnectServer.setEnabled(false);
-            new Thread(() -> {
-                try {
-                    clientSocket = new Socket();
-                    clientSocket.connect(new InetSocketAddress(serverIP, serverPort), CONNECT_TIME_OUT);
-                } catch (IOException e) {
-                    //连接失败
-                    runOnUiThread(()->{
-                        btConnectServer.setEnabled(true);
-                        MessageBuilder.showMessageWithOK(this, "连接服务器失败", "请检查WIFI/IP/Port." + e.getMessage());
-                    });
-                    return;
-                }
-                if (clientSocket.isConnected() && !clientSocket.isClosed()) {
-                    //连接成功且正处于连接ing，锁住按钮，不允许点击
-                    runOnUiThread(()->{
-                        btConnectServer.setEnabled(false);
-                        MessageBuilder.showMessageWithOK(this, "服务器连接成功.", "服务器连接成功.");
-                    });
-                }
-            }).start();
-        });
-
         //设置IP、PORT输入框的监听器
         edtServerIP.addTextChangedListener(new TextWatcher() {
             @Override
@@ -244,7 +216,6 @@ public class MainActivity extends AppCompatActivity {
 
                 btStartSampling.setText(R.string.button_start_record);
                 btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.start_green));
-                btConnectServer.setEnabled(true);
             } else {
                 //开始采数，将按钮文本改为”停止采数“，将按钮颜色改为红色
                 fileNameMark = "TEST_".concat(new SimpleDateFormat("yyyy-MM-dd-HH:mm:ss", Locale.CHINA).format(new Date()));
@@ -256,16 +227,11 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
                 //如果是在socket连接成功的情况下，则启动数据发送，否则不管
-                if (clientSocket.isConnected() && !clientSocket.isClosed()) {
-                    dataSentor = SentDataBySocket.sentDataWithFixedDelay(
-                            clientSocket, sensorsData, DATA_SENTING_DELAY, DATA_SENTING_DELAY);
-                    try {
-                        dataSentor.startSentData();
-                    } catch (IOException e) {
-                        Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-                    }
-                } else {
-                    Toast.makeText(this, "未连接服务器", Toast.LENGTH_SHORT);
+                dataSentor = SentDataBySocket.sentDataWithFixedDelay(serverIP, serverPort, sensorsData, DATA_SENTING_DELAY, DATA_SENTING_DELAY, this);
+                try {
+                    dataSentor.startSentData();
+                } catch (IOException e) {
+                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
                 }
 
                 btStartSampling.setText(R.string.button_stop_record);

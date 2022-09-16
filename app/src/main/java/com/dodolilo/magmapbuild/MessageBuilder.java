@@ -3,6 +3,7 @@ package com.dodolilo.magmapbuild;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Looper;
+import android.util.Log;
 
 /**
  * 一个用于提供简单的UI消息提醒方法的工具类.
@@ -16,6 +17,9 @@ public class MessageBuilder {
      * @param message 提示框内容
      */
     public static void showMessageWithOK(Context context, String title, String message) {
+        if (context == null) {
+            Log.w("MessageBuilder", "context == null");
+        }
         new AlertDialog.Builder(context)
                 .setTitle(title)
                 .setMessage(message)

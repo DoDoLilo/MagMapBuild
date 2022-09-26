@@ -188,7 +188,7 @@ public class SensorsBee {
      *
      * @return false 如果任何一个传感器启动or注册失败.
      */
-    public boolean startSensorRecord(String fileSaveName, StringBuilder sensorsData) {
+    public boolean startSensorRecord(StringBuilder sensorsData) {
         //1.重新获取传感器对象引用检查传感器是否可用，注册传感器
         if (!initSensorsAndCheckAvailable() || !registerSensors()) {
             return false;
@@ -221,10 +221,6 @@ public class SensorsBee {
                     e.printStackTrace();
                 }
             }
-            //3.结束采集，将传感器缓存数据存储到手机内存空间中，为避免阻塞，直接利用这个Thread
-            Looper.prepare();
-            CsvDataTools.saveCsvToExternalStorage(fileSaveName, CsvDataTools.FileSaveType.CSV, sensorsData.toString(), context);
-            Looper.loop();
         }).start();
 
         return true;

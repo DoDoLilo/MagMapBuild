@@ -89,12 +89,12 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 定位系统服务器ip地址.
      */
-    private String serverIP = "10.255.18.240";
+    private String serverIP = "10.254.7.9";
 
     /**
      * 定位系统服务器端口号.
      */
-    private int serverPort = 9090;
+    private int serverPort = 2212;
 
     /**
      * 本APP作为客户端的socket连接.初始为未连接的socket
@@ -182,7 +182,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void afterTextChanged(Editable s) {
                 // TODO: 2022/9/14 检查ip的合法性
-                serverIP = s.toString();
+                if (s.length() != 0) {
+                    serverIP = s.toString();
+                }
             }
         });
         edtServerPort.addTextChangedListener(new TextWatcher() {
@@ -196,8 +198,10 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void afterTextChanged(Editable s) {
-                // TODO: 2022/9/14 检查port的合法性 
-                serverPort = Integer.parseInt(s.toString());
+                // TODO: 2022/9/14 检查port的合法性
+                if (s.length() != 0) {
+                    serverPort = Integer.parseInt(s.toString());
+                }
             }
         });
 
@@ -206,9 +210,9 @@ public class MainActivity extends AppCompatActivity {
         btStartSampling.setOnClickListener(v -> {
             if (sensorsBee.isRecording()) {
                 //停止采数，停止发送程序，保存打点文件，将按钮文本改为”开始采数“，将按钮颜色改为绿色
-                sensorsBee.stopSensorRecord();
+                sensorsBee.stopSensorRecord(); //先停止IMU数据采集
                 if (dataSentor != null) {
-                    dataSentor.finishSentData();
+                    dataSentor.finishSentData(); //再停止Socket发送
                 }
 
                 String pointMarkFileName = fileNameMark.concat("_points");
@@ -226,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
                     MessageBuilder.showMessageWithOK(this, "SensorsBee Start Error", "SensorsBee Start Failed");
                     return;
                 }
-                //如果是在socket连接成功的情况下，则启动数据发送，否则不管
+                //启动数据发送
                 dataSentor = SentDataBySocket.sentDataWithFixedDelay(serverIP, serverPort, sensorsData, DATA_SENTING_DELAY, DATA_SENTING_DELAY, this);
                 try {
                     dataSentor.startSentData();

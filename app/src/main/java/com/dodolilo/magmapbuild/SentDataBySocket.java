@@ -41,9 +41,9 @@ public class SentDataBySocket {
 
     private int port;
 
-    private long initalDalay = 0;
+    private long initalDalay = 1000;
 
-    private long delay = 0;
+    private long delay = 1000;
 
     private Context context;
 
@@ -155,8 +155,10 @@ public class SentDataBySocket {
                         lastIndex = nextIndex;
                         Thread.sleep(delay);
                     }
-                    //离开循环，先将剩余的数据发出去
+                    //离开机房、离开循环，先将剩余的数据发出去
+                    Thread.sleep(delay); //这里睡一段时间，以保证先结束的SensorBee写入数据到dataToSent
                     bfWriter.write(dataToSent.substring(lastIndex, dataToSent.length()));
+                    bfWriter.write("END");
                 } catch (Exception e) {
                     //出现意外，断开连接，将状态置为SOCKET_EXCEPTION，好让外部知晓.
                     state = DataSentState.SOCKET_EXCEPTION;

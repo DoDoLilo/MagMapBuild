@@ -13,8 +13,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
-
-public class CsvDataTools {
+class CsvDataTools {
     public enum FileSaveType {
         CSV(".csv"), TXT(".txt");
 
@@ -70,7 +69,6 @@ public class CsvDataTools {
     }
 
     /**
-     *
      * @param point
      * @return
      */
@@ -89,10 +87,11 @@ public class CsvDataTools {
     /**
      * 向Android<b>应用外部存储空间的cache文件夹</b>中保存<b>csv文件</b>.
      * 涉及UI Handler，若不是在主线程中使用，需要主动创建Looper.
+     *
      * @param fileName 文件名，应该以".csv"结尾，不需要外部给外存路径
      * @param fileType 文件类型后缀，如".csv"
      * @param dataStr  写入csv文件的数据
-     * @param context     上下文
+     * @param context  上下文
      * @return true 如果保存文件成功
      */
     public static boolean saveCsvToExternalStorage(String fileName, FileSaveType fileType, String dataStr, Context context) {
@@ -125,6 +124,7 @@ public class CsvDataTools {
      * 从Android<b>应用外部存储空间的files文件夹</b>中读取<b>csv文件</b>.
      * NOTE:读取一个文件时，不仅要检查存储空间是否可读，还需要检查该文件是否存在.
      * 涉及UI Handler，若不是在主线程中使用，需要主动创建Looper.
+     *
      * @param csvFileName 文件名，应该以".csv"结尾，不需要外部给外存路径
      * @param context     上下文
      * @return null 如果外部存储空间不可读or读失败；否则返回读取到的StringBuilder内容

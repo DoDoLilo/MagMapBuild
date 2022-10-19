@@ -15,7 +15,7 @@ import net.jcip.annotations.NotThreadSafe;
  * 需要使用加速度计、陀螺仪、磁力计、方向四元数这4个传感器.
  */
 @NotThreadSafe
-public class SensorsBee {
+class SensorsBee {
     /**
      * 外部提供的上下文.
      */
@@ -174,7 +174,6 @@ public class SensorsBee {
         lackedSensorsMsg.append(magSensor == null ? "No Magnetic Field!\n" : "");
         lackedSensorsMsg.append(quatSensor == null ? "No Game Rotation Vector!\n" : "");
         if (lackedSensorsMsg.length() != 0) {
-            MessageBuilder.showMessageWithOK(context, "Init Failed", lackedSensorsMsg.toString());
             return false;
         }
 
@@ -272,7 +271,6 @@ public class SensorsBee {
             registerFailedMsg.append("GameRotationVector Register Failed!\n");
         }
         if (registerFailedMsg.length() != 0) {
-            MessageBuilder.showMessageWithOK(context, "Init Failed", registerFailedMsg.toString());
             return false;
         }
 

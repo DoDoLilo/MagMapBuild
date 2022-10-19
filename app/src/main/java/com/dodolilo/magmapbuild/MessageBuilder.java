@@ -8,7 +8,7 @@ import android.util.Log;
 /**
  * 一个用于提供简单的UI消息提醒方法的工具类.
  */
-public class MessageBuilder {
+class MessageBuilder {
     /**
      * 弹出提醒的消息窗口.
      * 只提供“确认”按钮，点击后不做任何事.

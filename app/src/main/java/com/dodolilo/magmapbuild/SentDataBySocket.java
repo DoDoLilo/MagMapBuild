@@ -1,7 +1,6 @@
 package com.dodolilo.magmapbuild;
 
 import android.content.Context;
-import android.os.Looper;
 import android.util.Log;
 
 import net.jcip.annotations.NotThreadSafe;
@@ -9,19 +8,18 @@ import net.jcip.annotations.NotThreadSafe;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
+import java.security.InvalidParameterException;
 
 /**
  * 管理向服务器发送数据的类.
  * 使用静态构造工厂控制其使用（使名字更容易理解）.
  */
 @NotThreadSafe
-public class SentDataBySocket {
-    //BufferedWriter缓冲区大小: 160char/行 * max200行
-    private static final int BUFFER_SIZE = 160 * 200;
+class SentDataBySocket {
+    //BufferedWriter缓冲区大小: 160char/行 * max200行/秒 * 60秒
+    private static final int BUFFER_SIZE = 160 * 200 * 60;
 
     /**
      * 发送数据的内容.需要传入同步了的数据结构的引用？
@@ -62,9 +60,12 @@ public class SentDataBySocket {
         FINISHED_SENT
     }
 
-    private DataSentState state;
+    private DataSentState state = DataSentState.FINISHED_SENT;
 
-    public void setDataToSent(StringBuilder dataToSent) {
+    public void setDataToSent(StringBuilder dataToSent) throws InvalidParameterException {
+        if (dataToSent == null) {
+            throw new InvalidParameterException("Param dataToSent is null");
+        }
         this.dataToSent = dataToSent;
     }
 
@@ -99,7 +100,7 @@ public class SentDataBySocket {
             long initalDalay,
             long delay,
             Context context
-    ) {
+    ) throws InvalidParameterException {
         SentDataBySocket sd = new SentDataBySocket();
         sd.setServerIP(serverIP);
         sd.setPort(port);
@@ -110,17 +111,44 @@ public class SentDataBySocket {
         return sd;
     }
 
+    public static SentDataBySocket sentDataWithFixedDelay(
+            String serverIP,
+            int port,
+            StringBuilder dataToSent,
+            Context context
+    ) throws InvalidParameterException {
+        SentDataBySocket sd = new SentDataBySocket();
+        sd.setServerIP(serverIP);
+        sd.setPort(port);
+        sd.setDataToSent(dataToSent);
+        sd.setContext(context);
+        return sd;
+    }
+
+    //测试本对象实例是否能连接到服务器
+    public boolean pretestConnection() {
+        Socket socket = null;
+        try {
+            socket = new Socket();
+            socket.connect(new InetSocketAddress(serverIP, port), CONNECT_TIME_OUT);
+            socket.sendUrgentData(0xFF);
+        } catch (IOException e) {
+            return false;
+        } finally {
+
+        }
+        return true;
+    }
+
+
     /**
      * 开启数据发送线程.并不阻止采数程序的继续运行.
      * 当无法发送数据时，让外界知晓。
      */
-    public void startSentData() throws IOException {
-        //抛出异常到外面，不使用context
-        if (state == DataSentState.SENTING_DATA) {
-            throw new IOException("正在发送数据，不要重复启动...");
-        }
-        if (dataToSent == null) {
-            throw new IOException("无法发送数据...");
+    public void startSentData() {
+        if (state != DataSentState.FINISHED_SENT) {
+            Log.e("startSentData()", "已有线程正在发送数据，不要重复启动，只允许一个发送数据的线程.");
+            return;
         }
 
         //启动子线程
@@ -136,39 +164,55 @@ public class SentDataBySocket {
             int lastIndex = 0;
             Socket socket = null;
             state = DataSentState.SENTING_DATA;
+
             while (state != DataSentState.FINISHED_SENT) {//这里包一层while循环，当socket连接断开时，不断尝试重新连接
                 try {
                     socket = new Socket();
                     socket.connect(new InetSocketAddress(serverIP, port), CONNECT_TIME_OUT);
                     state = DataSentState.SENTING_DATA;
+                    Log.e("Socket Hint", "connect succeed!");
                 } catch (IOException e) {
                     Log.e("Socket Error", "can't connnect again...");
                     e.printStackTrace();
+                    if (socket != null) {
+                        try {
+                            socket.close();
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
+                        }
+                    }
                 }
 
-                try (BufferedWriter bfWriter = new BufferedWriter(
-                        new OutputStreamWriter(socket.getOutputStream()), BUFFER_SIZE)) {
-                    while (state == DataSentState.SENTING_DATA) {
-                        int nextIndex = dataToSent.length(); //提前记录，不要多次调用.length()
-                        bfWriter.write(dataToSent.substring(lastIndex, nextIndex));
+                if (state != DataSentState.FINISHED_SENT && socket != null && socket.isConnected() && !socket.isClosed()) {
+                    //如果没有“离开机房” 且 socket连接成功，则尝试发送数据
+                    try (BufferedWriter bfWriter = new BufferedWriter(
+                            new OutputStreamWriter(socket.getOutputStream()), BUFFER_SIZE)) {
+                        while (state == DataSentState.SENTING_DATA) {
+                            socket.sendUrgentData(0xFF); //测试是否还能连上服务器
+                            int nextIndex = dataToSent.length(); //提前记录，不要多次调用.length()
+                            bfWriter.write(dataToSent.substring(lastIndex, nextIndex));
+                            bfWriter.flush();
+                            lastIndex = nextIndex;
+                            Thread.sleep(delay);
+                        }
+                        //离开机房、离开循环，先将剩余的数据发出去
+                        Thread.sleep(delay); //这里睡一段时间，以保证先结束的SensorBee写入数据到dataToSent
+                        bfWriter.write(dataToSent.substring(lastIndex, dataToSent.length()));
                         bfWriter.flush();
-                        lastIndex = nextIndex;
-                        Thread.sleep(delay);
-                    }
-                    //离开机房、离开循环，先将剩余的数据发出去
-                    Thread.sleep(delay); //这里睡一段时间，以保证先结束的SensorBee写入数据到dataToSent
-                    bfWriter.write(dataToSent.substring(lastIndex, dataToSent.length()));
-                    bfWriter.write("END");
-                } catch (Exception e) {
-                    //出现意外，断开连接，将状态置为SOCKET_EXCEPTION，好让外部知晓.
-                    state = DataSentState.SOCKET_EXCEPTION;
-                    e.printStackTrace();
-                } finally {
-                    //最后断开连接
-                    try {
-                        socket.close();
-                    } catch (IOException e) {
+                    } catch (Exception e) {
+                        //出现意外，断开连接，将状态置为SOCKET_EXCEPTION，好让外部知晓.
+                        Log.e("Socket Error", "connection failed...");
+                        state = DataSentState.SOCKET_EXCEPTION;
                         e.printStackTrace();
+                    } finally {
+                        //最后断开连接
+                        if (socket != null) {
+                            try {
+                                socket.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
                     }
                 }
             }

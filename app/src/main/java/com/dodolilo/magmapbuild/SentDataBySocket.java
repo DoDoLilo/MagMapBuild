@@ -45,6 +45,8 @@ class SentDataBySocket {
 
     private Context context;
 
+    private Socket socket = null;
+
     /**
      * 建立socket连接的时间上限，单位（ms）
      */
@@ -162,10 +164,11 @@ class SentDataBySocket {
 
             //开始发送dataToSent里的数据，
             int lastIndex = 0;
-            Socket socket = null;
+            socket = null;
             state = DataSentState.SENTING_DATA;
 
-            while (state != DataSentState.FINISHED_SENT) {//这里包一层while循环，当socket连接断开时，不断尝试重新连接
+            while (state != DataSentState.FINISHED_SENT) {
+                //连接socket
                 try {
                     socket = new Socket();
                     socket.connect(new InetSocketAddress(serverIP, port), CONNECT_TIME_OUT);
@@ -183,6 +186,8 @@ class SentDataBySocket {
                     }
                 }
 
+                //连接socket和进入该代码块分离，可能导致无法进入该代码块中的socket.close()!
+                //所以需要在最后额外增加socket.close()！
                 if (state != DataSentState.FINISHED_SENT && socket != null && socket.isConnected() && !socket.isClosed()) {
                     //如果没有“离开机房” 且 socket连接成功，则尝试发送数据
                     try (BufferedWriter bfWriter = new BufferedWriter(
@@ -214,6 +219,15 @@ class SentDataBySocket {
                             }
                         }
                     }
+                }
+            }
+
+            //退出循环
+            if (socket != null) {
+                try {
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
 

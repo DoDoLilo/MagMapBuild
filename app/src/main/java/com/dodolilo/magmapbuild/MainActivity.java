@@ -21,16 +21,6 @@ public class MainActivity extends AppCompatActivity {
     private Button btStartSampling;
 
     /**
-     * 数据采集类对象
-     */
-    private SensorsBee sensorsBee;
-
-    /**
-     * 保持传感器数据的共享容器引用.
-     */
-    private StringBuilder sensorsData;
-
-    /**
      * 定位系统服务器ip地址.
      */
     private String serverIP = "10.254.7.16";
@@ -40,12 +30,12 @@ public class MainActivity extends AppCompatActivity {
      */
     private int serverPort = 2212;
 
-    private SentDataBySocket dataSentor = null;
-
     /**
-     * 数据发送延迟，单位（ms）
+     * 用户身份标志：手机号.
      */
-    private static final int DATA_SENTING_DELAY = 1000;
+    private String userPhone = "17369798843";
+
+    private CollectSendSensorsData collectSendSensorsData = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
         btStartSampling = findViewById(R.id.btStartSampling);
 
         //2.构造采数类实例，context即这个Activity对象本身
-        sensorsBee = new SensorsBee(this);
+        collectSendSensorsData = CollectSendSensorsData.getSingleInstance(this, serverIP, serverPort, userPhone);
 
         //3.注册UI组件监听器
         setComponentsListeners();
@@ -73,10 +63,8 @@ public class MainActivity extends AppCompatActivity {
      */
     @Override
     protected void onDestroy() {
-        sensorsBee.stopSensorRecord();
-        if (dataSentor != null) {
-            dataSentor.finishSentData();
-        }
+        //停止开启的线程
+        collectSendSensorsData.leavingTheRoom();
         //最后再调用super的
         super.onDestroy();
     }
@@ -119,25 +107,18 @@ public class MainActivity extends AppCompatActivity {
 
         //设置“开始采集”、“停止采集”按钮的监听器
         btStartSampling.setOnClickListener(v -> {
-            if (sensorsBee.isRecording()) {
-                //停止采数，停止发送程序，保存打点文件，将按钮文本改为”开始采数“，将按钮颜色改为绿色
-                sensorsBee.stopSensorRecord(); //先停止IMU数据采集
-                if (dataSentor != null) {
-                    dataSentor.finishSentData(); //再停止Socket发送
-                }
+            if (collectSendSensorsData.isInTheRoom()) {
+                //离开机房：停止数据采集与发送，将按钮文本改为”开始采数“，将按钮颜色改为绿色
+                collectSendSensorsData.leavingTheRoom();
 
                 btStartSampling.setText(R.string.button_start_record);
                 btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.start_green));
             } else {
-                //开始采数，将按钮文本改为”停止采数“，若启动成功，则按钮颜色变为红色
-                sensorsData = new StringBuilder();  //将共享数据容器DI到sensorsBee与dataSentor中
-
-                if (!sensorsBee.startSensorRecord(sensorsData)) {
-                    return;
-                }
-                //启动数据发送
-                dataSentor = SentDataBySocket.sentDataWithFixedDelay(serverIP, serverPort, sensorsData, DATA_SENTING_DELAY, DATA_SENTING_DELAY, this);
-                dataSentor.startSentData();
+                //进入机房：更新参数后开始采数与发送，将按钮文本改为”停止采数“，若启动成功，则按钮颜色变为红色
+                collectSendSensorsData.setServerIP(serverIP);
+                collectSendSensorsData.setServerPort(serverPort);
+                collectSendSensorsData.setUserPhone(userPhone);
+                collectSendSensorsData.enteringTheRoom();
 
                 btStartSampling.setText(R.string.button_stop_record);
                 btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.stop_red));

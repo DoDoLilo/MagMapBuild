@@ -7,10 +7,14 @@ import java.security.InvalidParameterException;
 /**
  * 采集并发送数据，封装SensorBee与SentDataBySocket.
  * 使用后必须在Android的onDestroy中调用leavingTheRoom()方法来停止工作.
- * 使用时将要将该对象声明为全局成员变量，并且不允许在没有调用该对象实例.leavingTheRoom()时，将该对象变为无引用对象！
- * 因为JVM的垃圾回收机制是未知的，所以该对象实例启动的线程可能会在其变为无引用对象后仍继续运行！
+ * 使用单例模式，避免在重复new CollectSendSensorsData，造成线程方法无法结束，占用服务器唯一通信链接.
  */
 public class CollectSendSensorsData {
+    /**
+     * 单例模式，唯一实例.
+     */
+    private static CollectSendSensorsData singleInstance = new CollectSendSensorsData();
+
     private Context context;
 
     /**
@@ -38,31 +42,38 @@ public class CollectSendSensorsData {
      */
     private SentDataBySocket dataSentor;
 
+    /**
+     * 该单例最新的状态：false 不处于可定位场景中；true 处于预设场景中
+     */
+    private boolean inTheRoom = false;
+
 
     /**
+     * 返回该类单例，同时强制初始化参数.后续参数变化可用setter改变.
+     *
      * @param context    上下文
      * @param serverIP   服务器ip
      * @param serverPort 服务器端口号
      * @param userPhone  当前用户手机号
      * @throws InvalidParameterException 当传入的参数为null或为空字符串时，抛出该异常
      */
-    public CollectSendSensorsData(Context context, String serverIP, int serverPort, String userPhone) throws InvalidParameterException {
-        if (context == null) {
-            throw new InvalidParameterException("Param context is null");
-        }
-        this.context = context;
+    public static CollectSendSensorsData getSingleInstance(Context context, String serverIP, int serverPort, String userPhone) throws InvalidParameterException {
+        //在获取“新”实例前，停止“旧”实例的所有线程
+        singleInstance.leavingTheRoom();
+        //更新单例属性
+        singleInstance.setContext(context);
+        singleInstance.setServerIP(serverIP);
+        singleInstance.setServerPort(serverPort);
+        singleInstance.setUserPhone(userPhone);
+        singleInstance.setSensorsBee(new SensorsBee(context));
+        //返回该单例
+        return singleInstance;
+    }
 
-        if (serverIP == null || serverIP.equals("")) {
-            throw new InvalidParameterException("Param serverIP is null or empty");
-        }
-        this.serverIP = serverIP;
-        this.serverPort = serverPort;
-
-        if (userPhone == null || userPhone.equals("")) {
-            throw new InvalidParameterException("Param userPhone is null or empty");
-        }
-        this.userPhone = userPhone;
-        sensorsBee = new SensorsBee(context);
+    /**
+     * 单例模式，私有构造函数，防止外部获取新的实例.
+     */
+    private CollectSendSensorsData() {
     }
 
     /**
@@ -83,6 +94,7 @@ public class CollectSendSensorsData {
         //重新声明数据发送实例，启动数据发送
         dataSentor = SentDataBySocket.sentDataWithFixedDelay(serverIP, serverPort, sharedBuffer, context);
         dataSentor.startSentData();
+        inTheRoom = true;
         return true;
     }
 
@@ -96,9 +108,26 @@ public class CollectSendSensorsData {
         if (dataSentor != null) {
             dataSentor.finishSentData();
         }
+        inTheRoom = false;
     }
 
-    //-------------------------getters and setters ------------------------------------------
+    public boolean isInTheRoom() {
+        return inTheRoom;
+    }
+
+
+    //-------------------------getters and setters -----------------------------------------
+    public Context getContext() {
+        return context;
+    }
+
+    public void setContext(Context context) throws InvalidParameterException {
+        if (context == null) {
+            throw new InvalidParameterException("Param context is null");
+        }
+        this.context = context;
+    }
+
     public String getServerIP() {
         return serverIP;
     }
@@ -127,5 +156,12 @@ public class CollectSendSensorsData {
             throw new InvalidParameterException("Param userPhone is null or empty");
         }
         this.userPhone = userPhone;
+    }
+
+    public void setSensorsBee(SensorsBee sensorsBee) throws InvalidParameterException {
+        if (sensorsBee == null) {
+            throw new InvalidParameterException("Param sensorsBee is null");
+        }
+        this.sensorsBee = sensorsBee;
     }
 }

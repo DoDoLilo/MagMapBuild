@@ -194,6 +194,7 @@ class SensorsBee {
         }
 
         //2.启动采数线程
+        //NOTE：这句状态量的设置不要放在线程中！否则，如果用户点击按钮很快，会导致状态变化未按预期顺序发生！
         loopState = BeeStates.SENSOR_READING;
         new Thread(() -> {
             //实际runnable执行代码块，每隔5ms从sensorValues获取数据存到buffer中

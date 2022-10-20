@@ -58,7 +58,6 @@ class SentDataBySocket {
      */
     private enum DataSentState {
         SENTING_DATA,
-        SOCKET_EXCEPTION,
         FINISHED_SENT
     }
 
@@ -148,10 +147,13 @@ class SentDataBySocket {
      * 当无法发送数据时，让外界知晓。
      */
     public void startSentData() {
-        if (state != DataSentState.FINISHED_SENT) {
+        if (state == DataSentState.SENTING_DATA) {
             Log.e("startSentData()", "已有线程正在发送数据，不要重复启动，只允许一个发送数据的线程.");
             return;
         }
+
+        //NOTE：这句状态量的设置不要放在线程中！否则，如果用户点击按钮很快，会导致状态变化未按预期顺序发生！
+        state = DataSentState.SENTING_DATA;
 
         //启动子线程
         new Thread(() -> {
@@ -165,14 +167,12 @@ class SentDataBySocket {
             //开始发送dataToSent里的数据，
             int lastIndex = 0;
             socket = null;
-            state = DataSentState.SENTING_DATA;
 
-            while (state != DataSentState.FINISHED_SENT) {
+            while (state == DataSentState.SENTING_DATA) {
                 //连接socket
                 try {
                     socket = new Socket();
                     socket.connect(new InetSocketAddress(serverIP, port), CONNECT_TIME_OUT);
-                    state = DataSentState.SENTING_DATA;
                     Log.e("Socket Hint", "connect succeed!");
                 } catch (IOException e) {
                     Log.e("Socket Error", "can't connnect again...");
@@ -188,7 +188,7 @@ class SentDataBySocket {
 
                 //连接socket和进入该代码块分离，可能导致无法进入该代码块中的socket.close()!
                 //所以需要在最后额外增加socket.close()！
-                if (state != DataSentState.FINISHED_SENT && socket != null && socket.isConnected() && !socket.isClosed()) {
+                if (state == DataSentState.SENTING_DATA && socket != null && socket.isConnected() && !socket.isClosed()) {
                     //如果没有“离开机房” 且 socket连接成功，则尝试发送数据
                     try (BufferedWriter bfWriter = new BufferedWriter(
                             new OutputStreamWriter(socket.getOutputStream()), BUFFER_SIZE)) {
@@ -207,7 +207,6 @@ class SentDataBySocket {
                     } catch (Exception e) {
                         //出现意外，断开连接，将状态置为SOCKET_EXCEPTION，好让外部知晓.
                         Log.e("Socket Error", "connection failed...");
-                        state = DataSentState.SOCKET_EXCEPTION;
                         e.printStackTrace();
                     } finally {
                         //最后断开连接

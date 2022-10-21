@@ -10,8 +10,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.io.IOException;
-
 public class MainActivity extends AppCompatActivity {
     /**
      * UI组件声明
@@ -118,7 +116,10 @@ public class MainActivity extends AppCompatActivity {
                 collectSendSensorsData.setServerIP(serverIP);
                 collectSendSensorsData.setServerPort(serverPort);
                 collectSendSensorsData.setUserPhone(userPhone);
-                collectSendSensorsData.enteringTheRoom();
+                if (collectSendSensorsData.enteringTheRoom() == false) {
+                    Toast.makeText(this, "启动失败，重新尝试启动or认为手机传感器不支持", Toast.LENGTH_LONG);
+                    return ;
+                }
 
                 btStartSampling.setText(R.string.button_stop_record);
                 btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.stop_red));

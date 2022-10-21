@@ -1,0 +1,49 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    compileSdk 32
+
+    defaultConfig {
+        minSdk 26
+        targetSdk 32
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'com.google.android.material:material:1.6.1'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}
+
+task makeJar(type: Copy) {
+    //删除存在的（注意mylibrary是自己命名的，名字随便改）
+    delete 'build/libs/whuzhuyu-magposition.jar'
+    //设置拷贝的文件，需要根据AS的版本找到响应的文件夹
+    from('build/intermediates/compile_library_classes_jar/release')
+    //jar包最后的文件目录
+    into('build/libs/')
+    //include ,exclude参数来设置过滤（我们只关心classes.jar这个文件）
+    exclude('test/','BuildConfig.class','R.class')
+    include('classes.jar')
+    //重命名（注意mylibrary是自己命名的，名字随便改）
+    rename('classes.jar', 'whuzhuyu-magposition.jar')
+}
+makeJar.dependsOn(build)

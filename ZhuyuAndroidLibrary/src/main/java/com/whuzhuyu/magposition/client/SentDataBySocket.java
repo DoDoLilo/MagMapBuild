@@ -1,10 +1,14 @@
 package com.whuzhuyu.magposition.client;
 
+import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
+import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -38,16 +42,24 @@ class SentDataBySocket {
 
     private long initalDalay = 1000;
 
-    private long delay = 1000;
+    private long delay = 500;
 
     private Context context;
 
+    private Activity activity;
+
     private Socket socket = null;
+
+    private Toast toast = null;
 
     /**
      * 建立socket连接的时间上限，单位（ms）
      */
-    private static final int CONNECT_TIME_OUT = 3000;
+    private static final int CONNECT_TIME_OUT = 2000;
+    
+    private static final int SERVER_RESPONE_TIME_OUT = 2000;
+
+    private static final String SERVER_RESPONSE = "MMPS";
 
     /**
      * 表示本数据传输类的当前数据传输状态.
@@ -77,6 +89,7 @@ class SentDataBySocket {
 
     public void setContext(Context context) {
         this.context = context;
+        this.activity = (Activity) context;
     }
 
     private SentDataBySocket() {
@@ -123,21 +136,6 @@ class SentDataBySocket {
         return sd;
     }
 
-    //测试本对象实例是否能连接到服务器
-    public boolean pretestConnection() {
-        Socket socket = null;
-        try {
-            socket = new Socket();
-            socket.connect(new InetSocketAddress(serverIP, port), CONNECT_TIME_OUT);
-            socket.sendUrgentData(0xFF);
-        } catch (IOException e) {
-            return false;
-        } finally {
-
-        }
-        return true;
-    }
-
 
     /**
      * 开启数据发送线程.并不阻止采数程序的继续运行.
@@ -166,27 +164,54 @@ class SentDataBySocket {
             socket = null;
 
             while (state == DataSentState.SENTING_DATA) {
-                //连接socket
+                //使用额外变量记录是否连接成功，避免close()失败导致isClosed()错误
+                boolean connect_succeed = false;
+                BufferedReader bfReader = null;
+                //连接socket，这里不使用finally或try-with-resources是因为该socket后面还要用
                 try {
                     socket = new Socket();
                     socket.connect(new InetSocketAddress(serverIP, port), CONNECT_TIME_OUT);
-                    Log.e("Socket Hint", "connect succeed!");
+
+                    //开启IO input流，等待服务器响应，如果超过时间未响应，则认为连接失败！
+                    socket.setSoTimeout(SERVER_RESPONE_TIME_OUT);
+                    bfReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    String serverRespone = bfReader.readLine();
+
+                    if (serverRespone == null) {
+                        throw new IOException("Null response, wrong connection.");
+                    }
+
+                    if (SERVER_RESPONSE.equals(serverRespone)) {
+                        connect_succeed = true;
+                        activity.runOnUiThread(() -> Toast.makeText(context, "服务器响应成功", Toast.LENGTH_SHORT).show());
+                    }
+
                 } catch (IOException e) {
-                    Log.e("Socket Error", "can't connnect again...");
+                    connect_succeed = false;
+                    if (socket != null && socket.isConnected()) {
+                        activity.runOnUiThread(() -> Toast.makeText(context, "服务器超时未响应", Toast.LENGTH_SHORT).show());
+                    } else {
+                        activity.runOnUiThread(() -> Toast.makeText(context, "服务器连接失败", Toast.LENGTH_SHORT).show());
+                    }
+
                     e.printStackTrace();
-                    if (socket != null) {
-                        try {
-                            socket.close();
-                        } catch (IOException ex) {
-                            ex.printStackTrace();
+                    try {
+                        if (bfReader != null) {
+                            bfReader.close();
                         }
+                        if (socket != null) {
+                            socket.close();
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
                     }
                 }
 
                 //连接socket和进入该代码块分离，可能导致无法进入该代码块中的socket.close()!
                 //所以需要在最后额外增加socket.close()！
-                if (state == DataSentState.SENTING_DATA && socket != null && socket.isConnected() && !socket.isClosed()) {
+                if (state == DataSentState.SENTING_DATA && socket != null && socket.isConnected() && !socket.isClosed() && connect_succeed) {
                     //如果没有“离开机房” 且 socket连接成功，则尝试发送数据
+                    //socket连接成功、sendUrgentData没异常，也不能代表可以发送了
                     try (BufferedWriter bfWriter = new BufferedWriter(
                             new OutputStreamWriter(socket.getOutputStream()), BUFFER_SIZE)) {
                         while (state == DataSentState.SENTING_DATA) {
@@ -194,26 +219,43 @@ class SentDataBySocket {
                             int nextIndex = dataToSent.length(); //提前记录，不要多次调用.length()
                             bfWriter.write(dataToSent.substring(lastIndex, nextIndex));
                             bfWriter.flush();
-                            lastIndex = nextIndex;
                             Thread.sleep(delay);
+                            //认为数据发生成功了，认为lastIndex前的数据都成功发送出去了
+                            lastIndex = nextIndex;
                         }
-                        //离开机房、离开循环，先将剩余的数据发出去
-                        Thread.sleep(delay); //这里睡一段时间，以保证先结束的SensorBee写入数据到dataToSent
+                        //离开机房、离开循环，先将剩余的数据发出去，再发送一行END标识符
+                        //这里睡一段时间，以保证先结束的SensorBee写入数据到dataToSent
+                        Thread.sleep(delay);
                         bfWriter.write(dataToSent.substring(lastIndex, dataToSent.length()));
+                        bfWriter.flush();
+                        bfWriter.write("END\n");
                         bfWriter.flush();
                     } catch (Exception e) {
                         //出现意外，断开连接，将状态置为SOCKET_EXCEPTION，好让外部知晓.
                         Log.e("Socket Error", "connection failed...");
+                        activity.runOnUiThread(() -> Toast.makeText(context, "服务器连接断开", Toast.LENGTH_SHORT).show());
                         e.printStackTrace();
                     } finally {
                         //最后断开连接
-                        if (socket != null) {
-                            try {
-                                socket.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                        try {
+                            if (bfReader != null) {
+                                bfReader.close();
                             }
+                            if (socket != null) {
+                                socket.close();
+                            }
+                        } catch (IOException ex) {
+                            ex.printStackTrace();
                         }
+                    }
+                }
+
+                //过2.5s后再重连
+                if (state == DataSentState.SENTING_DATA) {
+                    try {
+                        Thread.sleep(2500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -222,11 +264,11 @@ class SentDataBySocket {
             if (socket != null) {
                 try {
                     socket.close();
+                    activity.runOnUiThread(() -> Toast.makeText(context, "服务器连接结束", Toast.LENGTH_SHORT).show());
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-
         }).start();
     }
 
@@ -234,5 +276,7 @@ class SentDataBySocket {
     public void finishSentData() {
         state = DataSentState.FINISHED_SENT;
     }
+
+
 
 }

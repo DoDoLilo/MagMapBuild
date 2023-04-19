@@ -38,7 +38,7 @@
         android:ems="10"
         android:inputType="textPersonName"
         android:minHeight="48dp"
-        android:text="10.254.7.9"
+        android:text="10.62.41.45"
         app:layout_constraintBottom_toBottomOf="@+id/tvServerAddress"
         app:layout_constraintStart_toEndOf="@+id/tvServerAddress"
         app:layout_constraintTop_toTopOf="@+id/tvServerAddress" />
@@ -55,6 +55,47 @@
         app:layout_constraintBottom_toBottomOf="@+id/edtServerIP"
         app:layout_constraintStart_toEndOf="@+id/edtServerIP"
         app:layout_constraintTop_toTopOf="@+id/edtServerIP"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <Button
+        android:id="@+id/btMarkPoint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="32dp"
+        android:text="打测试点"
+        app:layout_constraintStart_toStartOf="@+id/btStartSampling"
+        app:layout_constraintTop_toBottomOf="@+id/btStartSampling" />
+
+    <EditText
+        android:id="@+id/edtPointIndex"
+        android:layout_width="82dp"
+        android:layout_height="53dp"
+        android:layout_marginEnd="16dp"
+        android:ems="10"
+        android:inputType="number"
+        app:layout_constraintBottom_toBottomOf="@+id/btMarkPoint"
+        app:layout_constraintEnd_toStartOf="@+id/btMarkPoint"
+        app:layout_constraintTop_toTopOf="@+id/btMarkPoint" />
+
+    <TextView
+        android:id="@+id/tvPointIndex"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="输入测试点序号："
+        android:textSize="18sp"
+        app:layout_constraintBottom_toBottomOf="@+id/edtPointIndex"
+        app:layout_constraintEnd_toStartOf="@+id/edtPointIndex"
+        app:layout_constraintTop_toTopOf="@+id/edtPointIndex" />
+
+    <Button
+        android:id="@+id/btConnectionTest"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+        android:text="连接测试"
+        app:layout_constraintBottom_toBottomOf="@+id/btStartSampling"
+        app:layout_constraintEnd_toStartOf="@+id/btStartSampling"
+        app:layout_constraintTop_toTopOf="@+id/btStartSampling"
         app:layout_constraintVertical_bias="0.0" />
 
 

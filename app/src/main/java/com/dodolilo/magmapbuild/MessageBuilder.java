@@ -19,6 +19,7 @@ class MessageBuilder {
     public static void showMessageWithOK(Context context, String title, String message) {
         if (context == null) {
             Log.w("MessageBuilder", "context == null");
+            return;
         }
         new AlertDialog.Builder(context)
                 .setTitle(title)

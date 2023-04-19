@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MagMapBuild</string>
+    <string name="app_name">MagPosition</string>
 
     <string name="button_start_record">进入机房</string>
     <string name="button_stop_record">离开机房</string>

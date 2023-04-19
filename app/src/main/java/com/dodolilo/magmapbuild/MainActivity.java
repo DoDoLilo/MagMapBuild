@@ -10,6 +10,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import java.security.InvalidParameterException;
+
 public class MainActivity extends AppCompatActivity {
     /**
      * UI组件声明
@@ -17,11 +19,13 @@ public class MainActivity extends AppCompatActivity {
     private EditText edtServerIP;
     private EditText edtServerPort;
     private Button btStartSampling;
+    private EditText edtPointIndex;
+    private Button btMarkPoint;
 
     /**
      * 定位系统服务器ip地址.
      */
-    private String serverIP = "10.254.7.16";
+    private String serverIP = "124.70.13.200";
 
     /**
      * 定位系统服务器端口号.
@@ -35,18 +39,32 @@ public class MainActivity extends AppCompatActivity {
 
     private CollectSendSensorsData collectSendSensorsData = null;
 
+    private int pointIndex = 0;
+    private StringBuilder pointRecords = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        collectSendSensorsData = CollectSendSensorsData.getSingleInstance(this);
+
         //1.获取UI组件引用
         edtServerIP = findViewById(R.id.edtServerIP);
         edtServerPort = findViewById(R.id.edtServerPort);
         btStartSampling = findViewById(R.id.btStartSampling);
+        edtPointIndex = findViewById(R.id.edtPointIndex);
+        btMarkPoint = findViewById(R.id.btMarkPoint);
+
+        //
+
 
         //2.构造采数类实例，context即这个Activity对象本身
-        collectSendSensorsData = CollectSendSensorsData.getSingleInstance(this, serverIP, serverPort, userPhone);
+        try {
+            collectSendSensorsData = CollectSendSensorsData.getSingleInstance(this, serverIP, serverPort, userPhone);
+        } catch (InvalidParameterException e) {
+            e.printStackTrace();
+        }
 
         //3.注册UI组件监听器
         setComponentsListeners();
@@ -62,7 +80,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         //停止开启的线程
-        collectSendSensorsData.leavingTheRoom();
+        if (collectSendSensorsData != null) {
+            collectSendSensorsData.leavingTheRoom();
+        }
         //最后再调用super的
         super.onDestroy();
     }
@@ -111,18 +131,53 @@ public class MainActivity extends AppCompatActivity {
 
                 btStartSampling.setText(R.string.button_start_record);
                 btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.start_green));
+
+                //保存打点信息文件到外存文件中
+                CsvDataTools.saveCsvToExternalStorage("mark_points" + System.currentTimeMillis() + ".csv", CsvDataTools.FileSaveType.CSV, pointRecords.toString(), this);
+                //
+                pointRecords = null;
             } else {
                 //进入机房：更新参数后开始采数与发送，将按钮文本改为”停止采数“，若启动成功，则按钮颜色变为红色
                 collectSendSensorsData.setServerIP(serverIP);
                 collectSendSensorsData.setServerPort(serverPort);
                 collectSendSensorsData.setUserPhone(userPhone);
                 if (collectSendSensorsData.enteringTheRoom() == false) {
-                    Toast.makeText(this, "启动失败，重新尝试启动or认为手机传感器不支持", Toast.LENGTH_LONG);
+                    Toast.makeText(this, "启动失败，重新尝试启动or认为手机传感器不支持", Toast.LENGTH_LONG).show();
                     return ;
                 }
 
                 btStartSampling.setText(R.string.button_stop_record);
                 btStartSampling.setBackgroundColor(ContextCompat.getColor(this, R.color.stop_red));
+
+                //保存打点
+                pointRecords = new StringBuilder();
+            }
+        });
+
+        //输入打点下标的文本框
+        edtPointIndex.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if (s.length() != 0) {
+                    pointIndex = Integer.parseInt(s.toString());
+                }
+            }
+        });
+
+        //打点，如果pointRecords = null，则代表没有开始采集，不允许打点
+        btMarkPoint.setOnClickListener(v -> {
+            if (pointRecords != null) {
+                pointRecords.append(pointIndex + "," + System.currentTimeMillis() + "\n");
+            } else {
+                Toast.makeText(this, "请先点击 进入机房 按钮，再开始打点。", Toast.LENGTH_SHORT).show();
             }
         });
     }

@@ -1,13 +1,19 @@
 package com.whuzhuyu.magposition.client;
 
+import android.app.Activity;
 import android.content.Context;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.security.InvalidParameterException;
 
 /**
  * 采集并发送数据，封装SensorBee与SentDataBySocket.
  * 使用后必须在Android的onDestroy中调用leavingTheRoom()方法来停止工作.
  * 使用单例模式，避免在重复new CollectSendSensorsData，造成线程方法无法结束，占用服务器唯一通信链接.
+ * 虽然使用了单例模式，但仍无法解决在obj = new CollectSendSensorsData调用enteringRoom()后未调用leavingRoom()将obj置为null，
+ * 此时线程根本无法结束，就算有单例模式，所以不允许出现这种使用。
  */
 public class CollectSendSensorsData {
     /**
@@ -20,17 +26,17 @@ public class CollectSendSensorsData {
     /**
      * 服务器IP地址
      */
-    private String serverIP;
+    private String serverIP = "10.62.41.45";
 
     /**
      * 服务器端口号
      */
-    private int serverPort;
+    private int serverPort = 2212;
 
     /**
      * 当前用户手机号码
      */
-    private String userPhone;
+    private String userPhone = "123456789";
 
     /**
      * 数据采集对象
@@ -70,6 +76,12 @@ public class CollectSendSensorsData {
         return singleInstance;
     }
 
+    public static CollectSendSensorsData getSingleInstance(Context context) {
+        singleInstance.setContext(context);
+        singleInstance.setSensorsBee(new SensorsBee(context));
+        return singleInstance;
+    }
+
     /**
      * 单例模式，私有构造函数，防止外部获取新的实例.
      */
@@ -84,6 +96,9 @@ public class CollectSendSensorsData {
      * @return false 传感器采集启动失败（此时重新尝试启动or认为手机传感器不支持）
      */
     public boolean enteringTheRoom() {
+        //单例模式，在对唯一的对象启动线程时，先调用leavingTheRoom();
+        //此时就不会出现一直占用服务器唯一的socket连接的情况了！因为在下一次使用前，保证了旧线程的死亡
+        leavingTheRoom();
         //共享数据缓存，第一行固定为电话号码
         StringBuilder sharedBuffer = new StringBuilder();
         sharedBuffer.append(userPhone.concat("\n"));
@@ -113,6 +128,43 @@ public class CollectSendSensorsData {
 
     public boolean isInTheRoom() {
         return inTheRoom;
+    }
+
+    /**
+     * 测试是否能连接上服务器.
+     *
+     * @param activity 显示UI提醒的activity的实例引用
+     */
+    private void pretestConnection(Activity activity) {
+        new Thread(() -> {
+            Socket socket = null;
+            Boolean connectSucceed = false;
+            try {
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(serverIP, serverPort), 3000);
+                socket.sendUrgentData(0xFF);
+                connectSucceed = true;
+
+            } catch (IOException e) {
+                connectSucceed = false;
+            } finally {
+                if (socket != null) {
+                    try {
+                        socket.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                if (connectSucceed) {
+                    activity.runOnUiThread(() -> MessageBuilder.showMessageWithOK(context, "测试连接", "连接成功"));
+//                    activity.runOnUiThread(()-> Toast.makeText(context, "测试连接成功！", Toast.LENGTH_LONG).show());
+                } else {
+                    activity.runOnUiThread(() -> MessageBuilder.showMessageWithOK(context, "测试连接", "连接失败"));
+//                    activity.runOnUiThread(()-> Toast.makeText(context, "测试连接失败！", Toast.LENGTH_LONG).show());
+                }
+            }
+        }).start();
     }
 
 
